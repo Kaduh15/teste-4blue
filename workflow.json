@@ -1,0 +1,841 @@
+{
+  "name": "Teste - 4blue",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "teste-4blue",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        -128
+      ],
+      "id": "9afbb63d-23c1-4970-8772-e42bb633d62c",
+      "name": "Webhook",
+      "webhookId": "652db9db-e5b0-49aa-9ed0-4f73f9533838"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d8f4b2fa-e1a9-4bfd-98f3-bc9a828a5499",
+              "name": "nome_completo",
+              "value": "={{ $json.body.nome_completo }}",
+              "type": "string"
+            },
+            {
+              "id": "c5f5a5a2-236c-49b6-8316-ffa137f35ece",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "ed1c3a7d-10bf-4232-aa6b-6190298247a4",
+              "name": "data_nascimento",
+              "value": "={{ $json.body.data_nascimento }}",
+              "type": "string"
+            },
+            {
+              "id": "d36ab61f-147a-4c39-84f1-641e0d3837b9",
+              "name": "telefone",
+              "value": "={{ $json.body.telefone }}",
+              "type": "string"
+            },
+            {
+              "id": "782d0b64-b0c8-4790-a672-f0a23b782a24",
+              "name": "curso",
+              "value": "={{ $json.body.curso }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        -128
+      ],
+      "id": "56229865-2e0e-4304-87ee-fa15769338a8",
+      "name": "Set - Extrair Dados"
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json\n\nif (!payload.nome_completo || typeof payload.nome_completo !== 'string') {\n  throw new Error('Nome inválido')\n}\n\nconst tiposCurso = ['tech', 'business']\n\nif (!payload.curso || !tiposCurso.includes(payload.curso.toLowerCase())) {\n  throw new Error('Tipo do curso inválido')\n}\n\nconst emailRegex = /^[a-z0-9.]+@[a-z0-9]+\\.[a-z]+(\\.[a-z]+)?$/i\n\nif (!payload.email || !emailRegex.test(payload.email)) {\n  throw new Error('Email inválido')\n}\n\nconst nomeFormatado = payload.nome_completo\n  .toLowerCase()\n  .split(' ')\n  .map(nome => nome.charAt(0).toUpperCase() + nome.slice(1))\n  .join(' ')\n\nconst telefoneFormatado = payload.telefone.replace(/\\D/g, '')\n\nconst dataFormatada = payload.data_nascimento.replace(\n  /(\\d{2})\\/(\\d{2})\\/(\\d{4})/,\n  '$3-$2-$1'\n)\n\nreturn {\n  ...payload,\n  nome_completo: nomeFormatado,\n  telefone: telefoneFormatado,\n  data_nascimento: dataFormatada\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        -128
+      ],
+      "id": "a0f03f98-307a-4cce-948a-443f0880fa21",
+      "name": "Code - Validar e Normalizar Dados",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"message\": \"{{ $json.error.split('[')[0].trim() }}\"\n} ",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        672,
+        -32
+      ],
+      "id": "de977346-1732-4080-920b-10f3c1aa3f15",
+      "name": "Responder - Erro de Validação"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.curso.toLowerCase() }}",
+                    "rightValue": "tech",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "970e839a-e888-4e86-a73d-de6ed3cfa4f8"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Curso - Tech"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "db9042af-0aa1-4705-9ead-2c8482a1ca84",
+                    "leftValue": "={{ $json.curso.toLowerCase() }}",
+                    "rightValue": "business",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Curso - Business"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        672,
+        -224
+      ],
+      "id": "e1a5bd59-1dc6-495e-b98c-f060d5e9f85c",
+      "name": "Switch - Tipo de Curso"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tech",
+          "mode": "list",
+          "cachedResultName": "tech"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "Email",
+              "value": "={{ $json.email }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        896,
+        -320
+      ],
+      "id": "dc5f4e12-9a22-4c11-856a-58727abe58d3",
+      "name": "Postgres - Verificar Matrícula Existente",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "pQxqeLAZTUOMau9W",
+          "name": "Postgres account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "business",
+          "mode": "list",
+          "cachedResultName": "business"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "Email",
+              "value": "={{ $json.email }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        896,
+        -128
+      ],
+      "id": "cf2b5a68-ce22-4feb-8dc9-1e6c9d9546c9",
+      "name": "Postgres - Verificar Matrícula Existente1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "pQxqeLAZTUOMau9W",
+          "name": "Postgres account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8d40e41c-484b-4f25-9a68-a1d58d0d742c",
+              "leftValue": "={{ $json.temEmail }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1344,
+        -224
+      ],
+      "id": "a216216f-52c1-4d2a-ba39-ea096456c70a",
+      "name": "IF - Matrícula Já Existe?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"message\": \"Email inválido\"\n} ",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1568,
+        -320
+      ],
+      "id": "dd15a87e-517c-4c12-a74f-d95cd681aa72",
+      "name": "Responder - Matrícula Duplicada"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tech",
+          "mode": "list",
+          "cachedResultName": "tech"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nome": "={{ $json.data.nome_completo }}",
+            "Email": "={{ $json.data.email }}",
+            "Data_Nascimento": "={{ $json.data.data_nascimento }}",
+            "Curso": "={{ $json.data.curso }}",
+            "Telefone": "={{ $json.data.telefone }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Nome",
+              "displayName": "Nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Data_Nascimento",
+              "displayName": "Data_Nascimento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Curso",
+              "displayName": "Curso",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Telefone",
+              "displayName": "Telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1792,
+        -224
+      ],
+      "id": "814c69ce-0074-4434-b0a7-7865ce9e23ab",
+      "name": "Postgres - Inserir Matrícula",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "pQxqeLAZTUOMau9W",
+          "name": "Postgres account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "business",
+          "mode": "list",
+          "cachedResultName": "business"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nome": "={{ $json.data.nome_completo }}",
+            "Email": "={{ $json.data.email }}",
+            "Data_Nascimento": "={{ $json.data.data_nascimento }}",
+            "Telefone": "={{ $json.data.telefone }}",
+            "Curso": "={{ $json.data.curso }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Nome",
+              "displayName": "Nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Data_Nascimento",
+              "displayName": "Data_Nascimento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Curso",
+              "displayName": "Curso",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Telefone",
+              "displayName": "Telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1792,
+        -32
+      ],
+      "id": "09cc86b5-8875-4588-93d9-45a0d3ef5b71",
+      "name": "Postgres - Inserir Matrícula1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "pQxqeLAZTUOMau9W",
+          "name": "Postgres account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.Email }}",
+        "subject": "Cadastrado com sucesso!!",
+        "emailType": "text",
+        "message": "=Olá {{ $json.Nome }}, sua matrícula no curso {{ $json.Curso.toTitleCase() }} foi recebida com sucesso!",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2016,
+        -128
+      ],
+      "id": "0ee495a8-849e-43cb-ba5e-1ff863164e3e",
+      "name": "Email - Enviar Boas Vindas",
+      "webhookId": "943b1f61-7e21-430f-a14e-57cccbd09d19",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wRL8mbv851Bt5pYq",
+          "name": "Gmail account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"sucesso\": true,\n  \"mensagem\": \"Matrícula realizada com sucesso\",\n  \"dados\": {\n    \"nome\": \"{{ $('Code - Validar e Normalizar Dados').item.json.nome_completo }}\",\n    \"email\": \"{{ $('Code - Validar e Normalizar Dados').item.json.email }}\",\n    \"curso\": \"{{ $('Code - Validar e Normalizar Dados').item.json.curso.toTitleCase() }}\"\n  }\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2224,
+        -128
+      ],
+      "id": "d5b2b107-17c2-492a-8c78-86e04b10186b",
+      "name": "Responder - Sucesso"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e79b2d57-6472-4434-acc4-6e4ba064ff7d",
+              "name": "temEmail",
+              "value": "={{ !$json.isEmpty() }}",
+              "type": "boolean"
+            },
+            {
+              "id": "0506be4a-2d8f-4ad5-8831-581e89d2831b",
+              "name": "data",
+              "value": "={{ $('Code - Validar e Normalizar Dados').item.json }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1120,
+        -224
+      ],
+      "id": "53c4d8ee-fdfa-4066-ad96-1c41b7cc92d1",
+      "name": "Set - Preparar Dados da Verificação"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.curso.toLowerCase() }}",
+                    "rightValue": "tech",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "970e839a-e888-4e86-a73d-de6ed3cfa4f8"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Curso - Tech"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "db9042af-0aa1-4705-9ead-2c8482a1ca84",
+                    "leftValue": "={{ $json.data.curso.toLowerCase() }}",
+                    "rightValue": "business",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Curso - Business"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        1568,
+        -128
+      ],
+      "id": "a2a65b66-ea98-4cd2-b3e1-c026d8dc37cb",
+      "name": "Switch - Direcionar Inserção por Curso"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set - Extrair Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Extrair Dados": {
+      "main": [
+        [
+          {
+            "node": "Code - Validar e Normalizar Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Validar e Normalizar Dados": {
+      "main": [
+        [
+          {
+            "node": "Switch - Tipo de Curso",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder - Erro de Validação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Tipo de Curso": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Verificar Matrícula Existente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres - Verificar Matrícula Existente1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Verificar Matrícula Existente": {
+      "main": [
+        [
+          {
+            "node": "Set - Preparar Dados da Verificação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Verificar Matrícula Existente1": {
+      "main": [
+        [
+          {
+            "node": "Set - Preparar Dados da Verificação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Matrícula Já Existe?": {
+      "main": [
+        [
+          {
+            "node": "Responder - Matrícula Duplicada",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch - Direcionar Inserção por Curso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Inserir Matrícula": {
+      "main": [
+        [
+          {
+            "node": "Email - Enviar Boas Vindas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Inserir Matrícula1": {
+      "main": [
+        [
+          {
+            "node": "Email - Enviar Boas Vindas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email - Enviar Boas Vindas": {
+      "main": [
+        [
+          {
+            "node": "Responder - Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Preparar Dados da Verificação": {
+      "main": [
+        [
+          {
+            "node": "IF - Matrícula Já Existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Direcionar Inserção por Curso": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Inserir Matrícula",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres - Inserir Matrícula1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8a254b2d-4ff8-4098-9a3c-75b4fde70677",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dc0bcbaed5942825d40eb7dd9dcbb6ab0108046af92a3af9d5e04ea54a24a948"
+  },
+  "id": "idj2Mb79DzrMVV0o",
+  "tags": []
+}
