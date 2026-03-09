@@ -5,6 +5,8 @@ A proposta é criar uma automação utilizando **n8n** para processar matrícula
 
 O fluxo recebe os dados via webhook, trata e normaliza as informações, salva no banco de dados e envia um e-mail de confirmação para o aluno.
 
+![workflow.png](/docs/workflow.png "workflow.png")
+
 ---
 
 ## Fluxo da automação
